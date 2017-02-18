@@ -2,11 +2,12 @@ angular.module('autofontsize', [])
 
 .directive('autofontsize', function() {
 	this.SCALE_FACTOR = 2;
+	this.minFontSize = 1;
 
 	this.hasOverflow = function(element) {
 		var parent = element.parentElement;
 		return parent.offsetHeight < parent.scrollHeight;
-	}
+	};
 
 	this.requestFunctionExecution = function(functionToExecute) {
 		if(window.requestAnimationFrame) {
@@ -14,32 +15,34 @@ angular.module('autofontsize', [])
 		} else {
 			setTimeout(functionToExecute, 0);
 		}
-	}
+	};
 
 	this.scaleFontSize = function(element, currentFontSize, up) {
+		var fontSize;
 		if(up) {
-			var fontSize = currentFontSize + SCALE_FACTOR;
+			fontSize = currentFontSize + SCALE_FACTOR;
 		} else {
-			var fontSize = currentFontSize - SCALE_FACTOR;
+			fontSize = currentFontSize - SCALE_FACTOR;
 		}
 		setFontSize(element, fontSize);
 		return fontSize;
-	}
+	};
 
 	this.setFontSize = function(element, fontSize) {
 		element.style.fontSize = fontSize + "px";
-	}
+	};
 
 	this.executeScaleDown = function(element, currentFontSize) {
 		requestFunctionExecution(function() {
 			currentFontSize = scaleFontSize(element, currentFontSize, false);
-			if(hasOverflow(element)) {
+			var nextFontSize = currentFontSize - SCALE_FACTOR;
+			if(hasOverflow(element) && nextFontSize >= minFontSize) {
 				executeScaleDown(element, currentFontSize);
 			} else {
 				element.parentElement.className += " autofontsize-ready";
 			}
 		});
-	}
+	};
 
 	this.executeScaleUp = function(element, currentFontSize) {
 		requestFunctionExecution(function() {
@@ -50,7 +53,7 @@ angular.module('autofontsize', [])
 				executeScaleDown(element, currentFontSize);
 			}
 		});
-	}
+	};
 
 	this.adjustFontSize = function(element, defaultFontSize) {
 		var currentFontSize = defaultFontSize;
@@ -62,17 +65,23 @@ angular.module('autofontsize', [])
 		} else {
 			executeScaleUp(element, currentFontSize);
 		}
-	}
+	};
+
+	this.onReady = function(element, attrs) {
+		var defaultFontSize = parseInt(attrs.defaultfontsize);
+		this.minFontSize = parseInt(attrs.minfontsize);
+		adjustFontSize(element, defaultFontSize);
+	};
 
 	return {
 		restrict: 'A',
 		scope: {
-			defaultfontsize: '='
+			defaultfontsize: '=',
+			minfontsize: '='
 		},
 		link: function(scope, element, attrs, controllers) {
 			element.ready(function() {
-				var defaultFontSize = parseInt(attrs.defaultfontsize);
-				adjustFontSize(element[0], defaultFontSize);
+				onReady(element[0], attrs);
 			});
 		}
 	};
